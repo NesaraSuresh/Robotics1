@@ -221,6 +221,6 @@ __marimo__/
 
 # --- G82 ---
 assets/tb3/_*.xml
-results/
+/results/
 *.mp4
 .DS_Store
