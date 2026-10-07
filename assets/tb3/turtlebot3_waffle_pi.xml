@@ -1,0 +1,90 @@
+<!--
+  TurtleBot3 Waffle Pi MJCF.
+  Source: ROBOTIS robotis_mujoco_menagerie (Apache-2.0), see LICENSE in this folder.
+  G82 modifications (marked "G82"):
+    * added forward-facing RGB camera `rgb_cam` (Raspberry Pi Camera v2, vertical FoV 48.8 deg)
+    * added `lidar_site` at the LDS-01 scan plane
+    * added `imu_site` / base frame site for logging
+  Kinematic reference point (base frame origin) = mid-point of the wheel axle, on the ground.
+  Wheel radius r = 0.033 m, wheel separation L = 0.288 m (wheel bodies at y = +/-0.144).
+-->
+<mujoco model="turtlebot3_waffle_pi">
+  <compiler angle="radian" meshdir="assets/"/>
+
+  <option cone="elliptic" impratio="10"/>
+
+  <asset>
+    <material name="grey" rgba="0.3 0.3 0.3 1"/>
+    <material name="black" rgba="0.1 0.1 0.1 1"/>
+
+    <mesh name="waffle_pi_base" file="waffle_pi_base.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="left_tire" file="left_tire.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="right_tire" file="right_tire.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="lds" file="lds.stl" scale="0.001 0.001 0.001"/>
+  </asset>
+
+  <default>
+    <default class="wheel">
+      <joint limited="false" frictionloss="0.1" armature="0.01"/>
+      <!-- G82: kv raised 0.1 -> 1.5 so the wheel velocity servo tracks like the Dynamixel XM430 internal velocity loop -->
+      <velocity kv="1.5" ctrlrange="-7.88 7.88" ctrllimited="true" forcerange="-1.5 1.5" forcelimited="true"/>
+      <default class="wheel_left">
+        <joint axis="0 0 1"/>
+      </default>
+      <default class="wheel_right">
+        <joint axis="0 0 1"/>
+      </default>
+    </default>
+    <default class="visual">
+      <geom type="mesh" contype="0" conaffinity="0" density="0" group="2"/>
+    </default>
+    <default class="collision">
+      <geom group="3" type="mesh"/>
+    </default>
+  </default>
+
+  <worldbody>
+    <body name="base" pos="0 0 0">
+      <inertial pos="-0.064 0 0.06" mass="1.8" diaginertia="0.01 0.01 0.008"/>
+      <joint type="free" name="base_joint"/>
+      <geom pos="-0.064 0 0.01" mesh="waffle_pi_base" material="black" class="visual"/>
+      <!-- G82: primitive collision box instead of the mesh hull (mesh hull touched the floor and dragged) -->
+      <geom name="base_collision" type="box" size="0.140 0.130 0.050" pos="-0.064 0 0.075" group="3" rgba="0 0 1 0.2"/>
+      <geom size="0.005" pos="-0.177 -0.064 0.005" type="sphere" material="grey" friction="0.0001 0.0001 0.0001" solref="0.02 1" solimp="0.95 0.99 0.001" condim="1"/>
+      <geom size="0.005" pos="-0.177 0.064 0.005" type="sphere" material="grey" friction="0.0001 0.0001 0.0001" solref="0.02 1" solimp="0.95 0.99 0.001" condim="1"/>
+      <geom pos="-0.049 0 0.1255" mesh="lds" material="black" class="visual"/>
+      <geom name="lds_collision" type="cylinder" size="0.035 0.02" pos="-0.049 0 0.150" group="3"/>
+      <geom size="0.0075 0.015 0.0135" pos="0.078 0 0.107" type="box" material="grey"/>
+
+      <!-- G82: sensors. Camera looks along body +x (MuJoCo cameras look along their -z). -->
+      <camera name="rgb_cam" pos="0.0865 0 0.107" xyaxes="0 -1 0 0 0 1" fovy="48.8"/>
+      <site name="lidar_site" pos="-0.049 0 0.172" size="0.005" rgba="1 0 0 0.5" group="4"/>
+      <site name="base_site" pos="0 0 0" size="0.01" rgba="0 1 0 0.5" group="4"/>
+
+      <body name="wheel_left" pos="0 0.144 0.033" quat="0.707388 -0.706825 0 0">
+        <inertial pos="0 0 0" quat="-0.000890159 0.706886 0.000889646 0.707326" mass="0.0284989" diaginertia="2.07126e-05 1.11924e-05 1.11756e-05"/>
+        <joint name="wheel_left" class="wheel_left"/>
+        <geom quat="0.707388 0.706825 0 0" mesh="left_tire" material="grey" class="visual"/>
+        <!-- G82: thin ellipsoid wheel (r = 0.033 m) -> single contact point; a flat cylinder touches at both rim edges and scrubs ~20% in arcs -->
+        <geom name="wheel_left_collision" type="ellipsoid" size="0.033 0.033 0.009" group="3" friction="2.0 0.005 0.0001"/>
+      </body>
+      <body name="wheel_right" pos="0 -0.144 0.033" quat="0.707388 -0.706825 0 0">
+        <inertial pos="0 0 0" quat="-0.000890159 0.706886 0.000889646 0.707326" mass="0.0284989" diaginertia="2.07126e-05 1.11924e-05 1.11756e-05"/>
+        <joint name="wheel_right" class="wheel_right"/>
+        <geom quat="0.707388 0.706825 0 0" mesh="right_tire" material="grey" class="visual"/>
+        <!-- G82: thin ellipsoid wheel (r = 0.033 m) -> single contact point; a flat cylinder touches at both rim edges and scrubs ~20% in arcs -->
+        <geom name="wheel_right_collision" type="ellipsoid" size="0.033 0.033 0.009" group="3" friction="2.0 0.005 0.0001"/>
+      </body>
+    </body>
+  </worldbody>
+
+  <actuator>
+    <velocity class="wheel_left" name="wheel_left" joint="wheel_left"/>
+    <velocity class="wheel_right" name="wheel_right" joint="wheel_right"/>
+  </actuator>
+
+  <contact>
+    <exclude body1="base" body2="wheel_left"/>
+    <exclude body1="base" body2="wheel_right"/>
+  </contact>
+</mujoco>

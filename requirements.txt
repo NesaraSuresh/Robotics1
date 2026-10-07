@@ -1,0 +1,6 @@
+mujoco>=3.1
+numpy>=1.24
+scipy>=1.10
+opencv-python>=4.8      # cv2.aruco.ArucoDetector API (OpenCV >= 4.7)
+matplotlib>=3.7
+pytest>=7
