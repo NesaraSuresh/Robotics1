@@ -18,7 +18,7 @@
 ## 1. Quick start
 
 ```bash
-git clone https://github.com/NesaraSuresh/G82 && cd G82
+git clone https://github.com/ramganeshsamala/G82 && cd G82
 python -m venv .venv && source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 
